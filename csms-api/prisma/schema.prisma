@@ -1,0 +1,104 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String    @id @default(uuid()) @db.VarChar(36)
+  email     String    @unique @db.VarChar(191)
+  password  String    @db.VarChar(191)
+  name      String    @db.VarChar(191)
+  group     String    @db.VarChar(191)
+  createdAt DateTime  @default(now()) @map("created_at") @db.DateTime(3)
+  deletedAt DateTime? @map("deleted_at") @db.DateTime(3)
+
+  auths Auth[]
+
+  @@map("users")
+}
+
+model Auth {
+  id           String   @id @default(uuid()) @db.VarChar(36)
+  userId       String   @map("user_id") @db.VarChar(36)
+  refreshToken String   @map("refresh_token") @db.Text
+  expiresAt    DateTime @map("expires_at") @db.DateTime(3)
+  createdAt    DateTime @default(now()) @map("created_at") @db.DateTime(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("auths")
+}
+
+model Cs {
+  id                String    @id @default(uuid()) @db.VarChar(36)
+  name              String    @db.VarChar(191)
+  address           String    @db.VarChar(191)
+  contact           String    @db.VarChar(191)
+  status            String    @default("문의접수") @db.VarChar(20)
+  licensePath       String?   @map("license_path") @db.VarChar(191)
+  licenseName       String?   @map("license_name") @db.VarChar(191)
+  description       String?   @db.Text
+  shippedAt         DateTime? @map("shipped_at") @db.DateTime(3)
+  createdAt         DateTime  @default(now()) @map("created_at") @db.DateTime(3)
+  receivedAt        DateTime? @map("received_at") @db.DateTime(3)
+
+  items   ShippedItem[]
+  replies CsReply[]
+
+  @@map("cs")
+}
+
+model CsReply {
+  id        String   @id @default(uuid()) @db.VarChar(36)
+  csId      String   @map("cs_id") @db.VarChar(36)
+  content   String   @db.Text
+  createdAt DateTime @default(now()) @map("created_at") @db.DateTime(3)
+
+  cs Cs @relation(fields: [csId], references: [id], onDelete: Cascade)
+
+  @@map("cs_replies")
+}
+
+model Item {
+  id    String @id @default(uuid()) @db.VarChar(36)
+  name  String @unique @db.VarChar(191)
+  price Int
+  count Int
+
+  shippedItems ShippedItem[]
+
+  @@map("items")
+}
+
+model ShippedItem {
+  id     String  @id @default(uuid()) @db.VarChar(36)
+  csId   String  @map("cs_id") @db.VarChar(36)
+  itemId String? @map("item_id") @db.VarChar(36)
+  name   String  @db.VarChar(191)
+  price  Int
+  count  Int
+
+  cs   Cs    @relation(fields: [csId], references: [id], onDelete: Cascade)
+  item Item? @relation(fields: [itemId], references: [id], onDelete: SetNull)
+
+  @@map("shipped_items")
+}
+
+model DailyVote {
+  id            String   @id @default(uuid()) @db.VarChar(36)
+  selector      String?  @db.VarChar(191)
+  isVoted       Boolean  @default(false) @map("is_voted")
+  comment       String?  @db.Text
+  userAgent     String?  @map("user_agent") @db.VarChar(255)
+  ipAddress     String?  @map("ip_address") @db.VarChar(45)
+  assignedEmail String?  @map("assigned_email") @db.VarChar(191)
+  createdAt     DateTime @default(now()) @map("created_at") @db.DateTime(3)
+  updatedAt     DateTime @default(now()) @updatedAt @map("updated_at") @db.DateTime(3)
+
+  @@map("daily_votes")
+}

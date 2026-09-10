@@ -1,0 +1,150 @@
+@import '@fontsource/pretendard/400.css';
+@import '@fontsource/pretendard/500.css';
+@import '@fontsource/pretendard/600.css';
+@import '@fontsource/pretendard/700.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+  font-family: Pretendard, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
+  --theme-primary: #059669;
+  --theme-primary-dark: #10b981;
+}
+
+body {
+  margin: 0;
+}
+
+.dark {
+  color-scheme: dark;
+  --theme-primary: #0f172a;
+  --theme-primary-dark: #34d399;
+}
+
+.app-shell {
+  background:
+    radial-gradient(circle at 18% 12%, rgba(16, 185, 129, 0.42), transparent 30rem),
+    radial-gradient(circle at 90% 8%, rgba(34, 197, 94, 0.28), transparent 28rem),
+    linear-gradient(135deg, #dcfce7 0%, #f1f5f9 46%, #d1fae5 100%);
+}
+
+.dark .app-shell {
+  background:
+    radial-gradient(circle at 18% 12%, rgba(16, 185, 129, 0.18), transparent 30rem),
+    radial-gradient(circle at 90% 8%, rgba(34, 197, 94, 0.12), transparent 28rem),
+    linear-gradient(135deg, #03150f 0%, #0f172a 50%, #052e20 100%);
+}
+
+.glass-panel {
+  border: 1px solid rgba(5, 150, 105, 0.15);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 8px 32px 0 rgba(5, 150, 105, 0.04);
+  transition: background 0.2s ease, backdrop-filter 0.2s ease, box-shadow 0.2s ease;
+}
+
+.dark .glass-panel {
+  border-color: rgba(52, 211, 153, 0.15);
+  background: rgba(15, 23, 42, 0.45);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+}
+
+.modal-border {
+  border: none !important;
+  box-shadow: 0 20px 40px rgba(5, 150, 105, 0.08) !important;
+  outline: none !important;
+}
+
+.dark .modal-border {
+  border: none !important;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35) !important;
+}
+
+/* Disable text selection across app except for inputs, textareas, and editable elements */
+* {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+input,
+textarea,
+[contenteditable="true"],
+.selectable {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/* Disable selection on date inputs and datetime edit fields */
+input[type="date"],
+input[type="date"]::-webkit-datetime-edit,
+input[type="date"]::-webkit-datetime-edit-fields-wrapper,
+input[type="date"]::-webkit-datetime-edit-text,
+input[type="date"]::-webkit-datetime-edit-month-field,
+input[type="date"]::-webkit-datetime-edit-day-field,
+input[type="date"]::-webkit-datetime-edit-year-field {
+  -webkit-user-select: none !important;
+  user-select: none !important;
+}
+
+/* Custom Global Scrollbar (Solid Theme Color & 1px Side Padding & 2px End Radius) */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #059669;
+  background-clip: padding-box;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  transition: background-color 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: #047857;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background-color: #10b981;
+  background-clip: padding-box;
+  border: 1px solid transparent;
+  border-radius: 2px;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background-color: #34d399;
+}
+
+/* Firefox Custom Scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #059669 transparent;
+}
+
+.dark * {
+  scrollbar-color: #10b981 transparent;
+}
+
+/* Hide scrollbars on mobile devices (< 768px) while preserving touch scrolling */
+@media (max-width: 767px) {
+  ::-webkit-scrollbar {
+    display: none;
+    width: 0px !important;
+    height: 0px !important;
+  }
+
+  * {
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+  }
+}

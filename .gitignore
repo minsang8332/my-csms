@@ -1,0 +1,4 @@
+csms-db/data
+.env
+.env.db
+.env.api

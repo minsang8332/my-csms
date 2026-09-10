@@ -1,0 +1,10 @@
+csms-client/node_modules
+csms-client/release
+csms-api/node_modules
+csms-api/dist
+csms-db/data
+csms-db/backup
+.env
+.env.api
+.env.db
+.git

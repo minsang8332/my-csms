@@ -1,0 +1,68 @@
+services:
+  csms-db:
+    build:
+      context: ./csms-db
+    container_name: csms-db
+    env_file:
+      - .env.db
+    volumes:
+      - ./csms-db/data:/var/lib/mysql
+      - ./csms-db/backup:/csms-db/backup
+    networks:
+      - csms-network
+    ports:
+      - "127.0.0.1:3306:3306"
+    restart: always
+
+  csms-api:
+    build:
+      context: ./csms-api
+      target: ${BUILD_TARGET:-production}
+    volumes:
+      - ${API_VOLUME_MOUNT:-./csms-api/src}:/usr/src/app/src
+      - ./csms-api/prisma:/usr/src/app/prisma
+      - ./csms-db/backup:/csms-db/backup
+      - ./csms-db/backup:/usr/src/app/csms-db/backup
+    command: sh -c "npx prisma db push && ${API_COMMAND:-node dist/main.js}"
+    container_name: csms-api
+    env_file:
+      - .env
+      - .env.api
+    environment:
+      - DB_HOST=csms-db
+      - DB_PORT=3306
+      - DATABASE_URL=mysql://csms_user:csms_secure_password@csms-db:3306/csms
+    depends_on:
+      - csms-db
+    networks:
+      - csms-network
+    restart: always
+
+  csms-proxy:
+    build:
+      context: .
+      dockerfile: ./csms-proxy/Dockerfile
+    container_name: csms-proxy
+    env_file:
+      - .env
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - csms-proxy-certs:/etc/nginx/ssl
+      - csms-proxy-acme:/var/www/html
+      - csms-proxy-getssl:/root/.getssl
+    depends_on:
+      - csms-api
+    networks:
+      - csms-network
+    restart: always
+
+volumes:
+  csms-proxy-certs:
+  csms-proxy-acme:
+  csms-proxy-getssl:
+
+networks:
+  csms-network:
+    driver: bridge

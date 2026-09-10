@@ -1,0 +1,44 @@
+{
+  "name": "csms-api",
+  "version": "1.0.0",
+  "description": "CSMS API Service",
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "nest build",
+    "start": "dotenv -e ../.env -e ../.env.api -- nest start",
+    "start:dev": "dotenv -e ../.env -e ../.env.api -- prisma generate && dotenv -e ../.env -e ../.env.api -- nest start --watch",
+    "start:prod": "node dist/main",
+    "prisma:generate": "dotenv -e ../.env -e ../.env.api -- prisma generate",
+    "prisma:studio": "dotenv -e ../.env -e ../.env.api -- prisma studio",
+    "migrate": "dotenv -e ../.env -e ../.env.api -- prisma migrate dev",
+    "migrate:dev": "dotenv -e ../.env -e ../.env.api -- prisma migrate dev",
+    "db:push": "dotenv -e ../.env -e ../.env.api -- prisma db push"
+  },
+  "dependencies": {
+    "@nestjs/common": "^11.0.1",
+    "@nestjs/config": "^4.0.4",
+    "@nestjs/core": "^11.0.1",
+    "@nestjs/jwt": "^11.0.2",
+    "@nestjs/passport": "^11.0.5",
+    "@nestjs/platform-express": "^11.0.1",
+    "@prisma/client": "^5.22.0",
+    "bcrypt": "^6.0.0",
+    "mysql2": "^3.12.0",
+    "nodemailer": "^9.0.5",
+    "passport": "^0.7.0",
+    "passport-jwt": "^4.0.1",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.1"
+  },
+  "devDependencies": {
+    "@nestjs/cli": "^11.0.0",
+    "@nestjs/schematics": "^11.0.0",
+    "@types/bcrypt": "^6.0.0",
+    "@types/node": "^22.10.1",
+    "@types/nodemailer": "^8.0.1",
+    "@types/passport-jwt": "^4.0.1",
+    "dotenv-cli": "^11.0.0",
+    "prisma": "^5.22.0",
+    "typescript": "^5.7.2"
+  }
+}
