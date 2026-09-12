@@ -9,7 +9,6 @@ import { useThemeStore } from '../stores/useThemeStore'
 import ItemManagementPage from '../pages/ItemManagementPage'
 import CsPage from '../pages/CsPage'
 import CsHistoryPage from '../pages/CsHistoryPage'
-import EPaperPage from '../pages/EPaperPage'
 import type { StoredMenu } from '../../../shared/api'
 
 type AppLayoutProps = {
@@ -117,8 +116,6 @@ function AppLayout({ menus, activeMenu, activeMenuId, onMenuChange }: AppLayoutP
               <CsPage title={activeMenu.label} subLabel={activeMenu.subLabel} />
             ) : activeMenu?.id === 'cs-history' ? (
               <CsHistoryPage title={activeMenu.label} subLabel={activeMenu.subLabel} />
-            ) : activeMenu?.id === 'epaper-design' ? (
-              <EPaperPage />
             ) : (
               <div className="glass-panel p-5">
                 <h2 className="text-lg font-semibold">{activeMenu?.label ?? '대시보드'}</h2>

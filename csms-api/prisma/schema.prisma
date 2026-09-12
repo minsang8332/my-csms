@@ -88,17 +88,3 @@ model ShippedItem {
 
   @@map("shipped_items")
 }
-
-model DailyVote {
-  id            String   @id @default(uuid()) @db.VarChar(36)
-  selector      String?  @db.VarChar(191)
-  isVoted       Boolean  @default(false) @map("is_voted")
-  comment       String?  @db.Text
-  userAgent     String?  @map("user_agent") @db.VarChar(255)
-  ipAddress     String?  @map("ip_address") @db.VarChar(45)
-  assignedEmail String?  @map("assigned_email") @db.VarChar(191)
-  createdAt     DateTime @default(now()) @map("created_at") @db.DateTime(3)
-  updatedAt     DateTime @default(now()) @updatedAt @map("updated_at") @db.DateTime(3)
-
-  @@map("daily_votes")
-}

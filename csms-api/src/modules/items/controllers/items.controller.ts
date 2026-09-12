@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Body, Param, Put, Delete } from '@nestjs/common';
 import { ItemsService } from '@/modules/items/services/items.service';
 import { Item } from '@prisma/client';
+import { CreateItemDto, UpdateItemDto } from '../dto/item.dto';
 
 
 @Controller('items')
@@ -18,14 +19,14 @@ export class ItemsController {
   }
 
   @Post()
-  create(@Body() itemData: Partial<Item>): Promise<Item> {
+  create(@Body() itemData: CreateItemDto): Promise<Item> {
     return this.itemsService.create(itemData);
   }
 
   @Put(':id')
   update(
     @Param('id') id: string,
-    @Body() itemData: Partial<Item>,
+    @Body() itemData: UpdateItemDto,
   ): Promise<Item> {
     return this.itemsService.update(id, itemData);
   }

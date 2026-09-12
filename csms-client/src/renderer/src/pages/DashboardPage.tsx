@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import AppLayout from '../layouts/AppLayout'
 import { useThemeEffect } from '../hooks/useThemeEffect'
-import { useMenuStore } from '../stores/useMenuStore'
+import { flattenMenus, useMenuStore } from '../stores/useMenuStore'
 
 function DashboardPage() {
   useThemeEffect()
@@ -22,7 +22,8 @@ function DashboardPage() {
     const handlePopState = () => {
       const menus = useMenuStore.getState().menus
       const path = window.location.pathname.replace(/\/$/, '') || '/'
-      const matched = menus.find((m) => m.path === path || m.path === `/${path}`) || menus.find((m) => m.id === 'cs-list')
+      const allMenus = flattenMenus(menus)
+      const matched = allMenus.find((m) => m.path === path || m.path === `/${path}`) || allMenus.find((m) => m.id === 'cs-list')
       if (matched) {
         useMenuStore.getState().setActiveMenuId(matched.id, false)
       }

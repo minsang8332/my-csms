@@ -1,11 +1,9 @@
-import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
+import { createApplication } from './bootstrap';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
-  app.setGlobalPrefix('v1/api');
-  // Listening on 8080 as requested
-  await app.listen(8080);
-  console.log('CSMS API is running on: http://localhost:8080');
+  const app = await createApplication();
+  const port = Number(process.env.PORT ?? 3000);
+  await app.listen(port);
+  console.log(`CSMS API is running on port ${port}`);
 }
 bootstrap();

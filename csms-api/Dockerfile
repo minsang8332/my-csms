@@ -7,7 +7,7 @@ RUN npm ci
 COPY . .
 RUN npx prisma generate
 RUN npm run build
-EXPOSE 8080
+EXPOSE 3000
 CMD ["npm", "run", "start:dev"]
 
 # Production stage
@@ -19,5 +19,5 @@ COPY prisma ./prisma
 RUN npm ci --omit=dev
 RUN npx prisma generate
 COPY --from=development /usr/src/app/dist ./dist
-EXPOSE 8080
+EXPOSE 3000
 CMD ["node", "dist/main.js"]

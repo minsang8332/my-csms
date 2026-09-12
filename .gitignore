@@ -1,4 +1,4 @@
 csms-db/data
 .env
-.env.db
-.env.api
+.env.local
+.env.*.local

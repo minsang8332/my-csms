@@ -19,9 +19,8 @@ export type StoredMenu = {
   label: string
   subLabel?: string | null
   path: string
-  order: number
   closable: boolean
-  parentId?: string | null
+  children?: StoredMenu[]
 }
 
 export type StoredPcm = {
