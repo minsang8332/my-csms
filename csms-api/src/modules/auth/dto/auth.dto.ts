@@ -1,21 +1,4 @@
-import { IsEmail, IsNotEmpty, IsString, MinLength } from 'class-validator';
-
-export class SignupDto {
-  @IsEmail()
-  email!: string;
-
-  @IsString()
-  @MinLength(8)
-  password!: string;
-
-  @IsString()
-  @IsNotEmpty()
-  name!: string;
-
-  @IsString()
-  @IsNotEmpty()
-  group!: string;
-}
+import { ArrayNotEmpty, IsArray, IsEmail, IsNotEmpty, IsString } from 'class-validator';
 
 export class LoginDto {
   @IsEmail()
@@ -30,4 +13,11 @@ export class RefreshTokenDto {
   @IsString()
   @IsNotEmpty()
   refreshToken!: string;
+}
+
+export class AssignRolesDto {
+  @IsArray()
+  @ArrayNotEmpty()
+  @IsString({ each: true })
+  roleCodes!: string[];
 }

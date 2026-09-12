@@ -5,6 +5,7 @@ import { AuthService } from './services/auth.service';
 import { AuthController } from './controllers/auth.controller';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { PrismaModule } from '@/prisma/prisma.module';
+import { RbacSeedService } from './rbac/rbac-seed.service';
 
 @Module({
   imports: [
@@ -13,7 +14,7 @@ import { PrismaModule } from '@/prisma/prisma.module';
     JwtModule.register({}),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy],
+  providers: [AuthService, JwtStrategy, RbacSeedService],
   exports: [AuthService],
 })
 export class AuthModule {}

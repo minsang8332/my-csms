@@ -5,6 +5,11 @@ services:
     container_name: csms-db
     env_file:
       - .env
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DOCKER_MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DOCKER_MYSQL_DATABASE}
+      MYSQL_USER: ${DOCKER_MYSQL_USER}
+      MYSQL_PASSWORD: ${DOCKER_MYSQL_PASSWORD}
     volumes:
       - ./csms-db/data:/var/lib/mysql
       - ./csms-db/backup:/csms-db/backup
@@ -17,20 +22,20 @@ services:
   csms-api:
     build:
       context: ./csms-api
-      target: ${BUILD_TARGET:-production}
+      target: ${DOCKER_BUILD_TARGET:-production}
     volumes:
-      - ${API_VOLUME_MOUNT:-./csms-api/src}:/usr/src/app/src
+      - ${DOCKER_API_VOLUME_MOUNT:-./csms-api/src}:/usr/src/app/src
       - ./csms-api/prisma:/usr/src/app/prisma
       - ./csms-db/backup:/csms-db/backup
       - ./csms-db/backup:/usr/src/app/csms-db/backup
-    command: sh -c "npx prisma db push && ${API_COMMAND:-node dist/main.js}"
+    command: sh -c "npx prisma db push && ${DOCKER_API_COMMAND:-node dist/main.js}"
     container_name: csms-api
     env_file:
       - .env
     environment:
-      DB_HOST: ${DB_HOST}
-      DB_PORT: ${DB_PORT}
-      DATABASE_URL: ${DATABASE_URL_DOCKER}
+      # 컨테이너 내부에서는 서비스 이름(csms-db)으로 연결한다.
+      # .env의 로컬 MySQL URL을 중복 관리하지 않는다.
+      MYSQL_DATABASE_URL: "mysql://${DOCKER_MYSQL_USER}:${DOCKER_MYSQL_PASSWORD}@${DOCKER_MYSQL_HOST}:${DOCKER_MYSQL_PORT}/${DOCKER_MYSQL_DATABASE}"
     depends_on:
       - csms-db
     networks:

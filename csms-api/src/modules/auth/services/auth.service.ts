@@ -1,8 +1,12 @@
-import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { createHash, randomUUID } from 'crypto';
 import { PrismaService } from '@/prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
-import { SignupDto, LoginDto } from '../dto/auth.dto';
+import { LoginDto } from '../dto/auth.dto';
+
+const ACCESS_TOKEN_TTL = '15m';
+const REFRESH_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 @Injectable()
 export class AuthService {
@@ -11,70 +15,42 @@ export class AuthService {
     private readonly jwtService: JwtService,
   ) {}
 
-  async signup(signupDto: SignupDto) {
-    const existingUser = await this.prisma.user.findUnique({
-      where: { email: signupDto.email },
-    });
-
-    if (existingUser) {
-      throw new ConflictException('Email already exists');
-    }
-
-    const hashedPassword = await bcrypt.hash(signupDto.password, 10);
-
-    const user = await this.prisma.user.create({
-      data: {
-        email: signupDto.email,
-        password: hashedPassword,
-        name: signupDto.name,
-        group: signupDto.group,
-      },
-    });
-
-    return { id: user.id, email: user.email, name: user.name, group: user.group };
-  }
-
   async login(loginDto: LoginDto) {
-    const user = await this.prisma.user.findUnique({
-      where: { email: loginDto.email },
-    });
-
-    if (!user || user.deletedAt) {
+    const user = await this.prisma.user.findUnique({ where: { email: loginDto.email } });
+    if (!user || user.deletedAt || !(await bcrypt.compare(loginDto.password, user.password))) {
       throw new UnauthorizedException('Invalid credentials');
     }
-
-    const isPasswordValid = await bcrypt.compare(loginDto.password, user.password);
-    if (!isPasswordValid) {
-      throw new UnauthorizedException('Invalid credentials');
-    }
-
-    return this.generateTokens(user.id, user.email);
+    return this.generateTokens(user.id, user.email, user.authVersion);
   }
 
   async refreshToken(refreshToken: string) {
+    const refreshSecret = this.getRefreshSecret();
     try {
-      const payload = this.jwtService.verify(refreshToken, {
-        secret: process.env.JWT_REFRESH_SECRET || 'fallback_refresh_secret',
+      const payload = this.jwtService.verify<{ sub: string; ver: number }>(refreshToken, {
+        secret: refreshSecret,
       });
-
-      const authRecord = await this.prisma.auth.findFirst({
-        where: { userId: payload.sub, refreshToken },
+      const session = await this.prisma.auth.findFirst({
+        where: { userId: payload.sub, tokenHash: this.hashToken(refreshToken) },
       });
-
-      if (!authRecord) {
-        throw new UnauthorizedException('Invalid refresh token');
+      if (!session || session.expiresAt <= new Date()) throw new UnauthorizedException('Invalid refresh token');
+      if (session.revokedAt) {
+        // A previously rotated token was replayed. Invalidate its token family and all access tokens.
+        if (session.familyId) {
+          await this.prisma.auth.updateMany({
+            where: { userId: payload.sub, familyId: session.familyId, revokedAt: null },
+            data: { revokedAt: new Date() },
+          });
+        }
+        await this.prisma.user.update({ where: { id: payload.sub }, data: { authVersion: { increment: 1 } } });
+        throw new UnauthorizedException('Refresh token reuse detected');
       }
-
-      // Check if expired in DB (just to be extra safe, though verify() handles it)
-      if (authRecord.expiresAt < new Date()) {
-        throw new UnauthorizedException('Refresh token expired');
-      }
-
       const user = await this.prisma.user.findUnique({ where: { id: payload.sub } });
-      if (!user || user.deletedAt) throw new UnauthorizedException('User not found or deleted');
+      if (!user || user.deletedAt || user.authVersion !== payload.ver) throw new UnauthorizedException('Token is no longer valid');
 
-      return this.generateTokens(user.id, user.email);
-    } catch (e) {
+      await this.prisma.auth.update({ where: { id: session.id }, data: { revokedAt: new Date() } });
+      return this.generateTokens(user.id, user.email, user.authVersion, session.familyId ?? randomUUID(), session.id);
+    } catch (error) {
+      if (error instanceof UnauthorizedException) throw error;
       throw new UnauthorizedException('Invalid refresh token');
     }
   }
@@ -82,43 +58,70 @@ export class AuthService {
   async withdraw(userId: string) {
     await this.prisma.user.update({
       where: { id: userId },
-      data: { deletedAt: new Date() },
+      data: { deletedAt: new Date(), authVersion: { increment: 1 } },
     });
-    
-    // Optionally delete or invalidate all auth records
-    await this.prisma.auth.deleteMany({
-      where: { userId },
-    });
-
+    await this.prisma.auth.updateMany({ where: { userId, revokedAt: null }, data: { revokedAt: new Date() } });
     return { message: 'Withdrawal successful' };
+  }
+
+  async disableUser(userId: string) {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { deletedAt: new Date(), authVersion: { increment: 1 } },
+    });
+    await this.prisma.auth.updateMany({ where: { userId, revokedAt: null }, data: { revokedAt: new Date() } });
+    return { message: 'User disabled' };
+  }
+
+  async assignRoles(userId: string, roleCodes: string[], actorRoleCodes: string[]) {
+    const uniqueCodes = [...new Set(roleCodes)];
+    if (uniqueCodes.includes('SUPER_ADMIN') && !actorRoleCodes.includes('SUPER_ADMIN')) {
+      throw new ForbiddenException('Only SUPER_ADMIN can assign SUPER_ADMIN');
+    }
+    const roles = await this.prisma.role.findMany({ where: { code: { in: uniqueCodes } } });
+    if (roles.length !== uniqueCodes.length) throw new BadRequestException('Unknown role included');
+
+    await this.prisma.$transaction([
+      this.prisma.userRole.deleteMany({ where: { userId } }),
+      this.prisma.userRole.createMany({ data: roles.map((role) => ({ userId, roleId: role.id })) }),
+      this.prisma.user.update({ where: { id: userId }, data: { authVersion: { increment: 1 } } }),
+    ]);
+    return { message: 'Roles updated', roleCodes: uniqueCodes };
   }
 
   async findAllUsers() {
     return this.prisma.user.findMany({
       where: { deletedAt: null },
-      select: { id: true, name: true, group: true }
+      select: {
+        id: true,
+        name: true,
+        group: true,
+        email: true,
+        roles: { select: { role: { select: { code: true } } } },
+      },
     });
   }
 
-  private async generateTokens(userId: string, email: string) {
-    const payload = { sub: userId, email };
+  private async generateTokens(userId: string, email: string, authVersion: number, familyId: string = randomUUID(), parentSessionId?: string) {
+    const payload = { sub: userId, email, ver: authVersion };
 
     const accessToken = this.jwtService.sign(payload, {
-      secret: process.env.JWT_SECRET || 'fallback_secret',
-      expiresIn: '15m',
+      secret: this.getAccessSecret(),
+      expiresIn: ACCESS_TOKEN_TTL,
     });
 
     const refreshToken = this.jwtService.sign(payload, {
-      secret: process.env.JWT_REFRESH_SECRET || 'fallback_refresh_secret',
+      secret: this.getRefreshSecret(),
       expiresIn: '7d',
     });
 
-    // Save refresh token to database
     await this.prisma.auth.create({
       data: {
         userId,
-        refreshToken,
-        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+        tokenHash: this.hashToken(refreshToken),
+        familyId,
+        parentSessionId,
+        expiresAt: new Date(Date.now() + REFRESH_TOKEN_TTL_MS),
       },
     });
 
@@ -126,5 +129,19 @@ export class AuthService {
       accessToken,
       refreshToken,
     };
+  }
+
+  private getAccessSecret() {
+    if (!process.env.JWT_SECRET) throw new Error('JWT_SECRET is required');
+    return process.env.JWT_SECRET;
+  }
+
+  private getRefreshSecret() {
+    if (!process.env.JWT_REFRESH_SECRET) throw new Error('JWT_REFRESH_SECRET is required');
+    return process.env.JWT_REFRESH_SECRET;
+  }
+
+  private hashToken(token: string) {
+    return createHash('sha256').update(token).digest('hex');
   }
 }

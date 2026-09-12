@@ -1,0 +1,42 @@
+export const PERMISSIONS = {
+  CS_READ: 'cs:read',
+  CS_WRITE: 'cs:write',
+  CS_DELETE: 'cs:delete',
+  CS_REPLY: 'cs:reply',
+  ITEM_READ: 'item:read',
+  ITEM_WRITE: 'item:write',
+  ITEM_DELETE: 'item:delete',
+  USER_READ: 'user:read',
+  USER_DISABLE: 'user:disable',
+  ROLE_MANAGE: 'role:manage',
+} as const;
+
+export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
+
+export const ALL_PERMISSIONS = Object.values(PERMISSIONS);
+
+export const ROLE_PERMISSIONS: Record<string, Permission[]> = {
+  SUPER_ADMIN: ALL_PERMISSIONS,
+  ADMIN: [
+    PERMISSIONS.CS_READ,
+    PERMISSIONS.CS_WRITE,
+    PERMISSIONS.CS_DELETE,
+    PERMISSIONS.CS_REPLY,
+    PERMISSIONS.ITEM_READ,
+    PERMISSIONS.ITEM_WRITE,
+    PERMISSIONS.ITEM_DELETE,
+    PERMISSIONS.USER_READ,
+    PERMISSIONS.USER_DISABLE,
+    PERMISSIONS.ROLE_MANAGE,
+  ],
+  OPERATOR: [
+    PERMISSIONS.CS_READ,
+    PERMISSIONS.CS_WRITE,
+    PERMISSIONS.CS_DELETE,
+    PERMISSIONS.CS_REPLY,
+    PERMISSIONS.ITEM_READ,
+    PERMISSIONS.ITEM_WRITE,
+    PERMISSIONS.ITEM_DELETE,
+  ],
+  VIEWER: [PERMISSIONS.CS_READ, PERMISSIONS.ITEM_READ],
+};
